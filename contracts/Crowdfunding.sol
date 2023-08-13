@@ -8,6 +8,7 @@ contract Crowdfunding {
 
     // List of existing projects
     Project[] private projects;
+    mapping(address => bool) existingProjects;
 
     // Event that will be emitted whenever a new project is started
     event ProjectStarted(
@@ -34,6 +35,7 @@ contract Crowdfunding {
         uint raiseUntil = now.add(durationInDays.mul(1 days));
         Project newProject = new Project(msg.sender, title, description, raiseUntil, amountToRaise);
         projects.push(newProject);
+        existingProjects[address(newProject)] = true;
         emit ProjectStarted(
             address(newProject),
             msg.sender,
@@ -49,5 +51,21 @@ contract Crowdfunding {
       */
     function returnAllProjects() external view returns(Project[] memory){
         return projects;
+    }
+
+    /** @dev Function to get the balance of a project.
+      * @return project balance.
+      */
+    function balanceOfProject(address projectAddress) public view returns (uint256) {
+        require(existingProjects[projectAddress] == true);
+        return Project(projectAddress).currentBalance();
+    }
+
+    /** @dev Function to contribute to a project.
+      * @return null.
+      */
+    function contribute(address projectAddress) public payable {
+        require(existingProjects[projectAddress] == true);
+        Project(projectAddress).contribute();
     }
 }
