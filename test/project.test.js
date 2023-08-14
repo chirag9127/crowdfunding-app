@@ -6,25 +6,26 @@ const dateToUNIX = (date) => {
 }
 
 contract("Project", function (accounts) {
-    // var projectContract;
-
-    // beforeEach(async function () {
-    //    const creator = accounts[0];
-    //    const title = "Test";
-    //    const desc = "Test Project";
-    //    const deadline = dateToUNIX('2024-05-22');
-    //    const goalAmount = 10000;
-    //    projectContract = await Project.deployed(creator, title, desc, deadline, goalAmount);
-    // });
-
-    it("should assert true as deployed", async function () {
-        const creator = accounts[0];
-        const title = "Test";
-        const desc = "Test Project";
-        const deadline = dateToUNIX('2024-05-22');
-        const goalAmount = 10000;
-        projectContract = await Project.deployed(creator, title, desc, deadline, goalAmount);
+    it("should assert true on project details", async function () {
+        projectContract = await Project.deployed();
         d = await projectContract.getDetails();
-        assert.equal(await d.projectTitle, "Test");
+        assert.equal(await d.projectTitle, "The next big app", "Unexpected project title");
+        assert.equal(await d.deadline, 1692556261, "Unexpected deadline");
+        assert.equal(await d.goalAmount, 200, "Unexpected goal amount");
+    });
+
+    it("should assert false on checkIfFundingCompleteOrExpired", async function () {
+        projectContract = await Project.deployed();
+        await projectContract.checkIfFundingCompleteOrExpired();
+        assert.equal(await projectContract.state(), Project.State.Fundraising, "Unexpected funding status");
+    });
+
+    it("test contribute and payOut", async function () {
+        projectContract = await Project.deployed();
+        await projectContract.contribute({sender:accounts[0], value:10});
+        assert.equal(await projectContract.state(), Project.State.Fundraising, "Unexpected funding status");
+        await projectContract.contribute({sender:accounts[0], value:190});
+        assert.equal(await projectContract.state(), Project.State.Successful, "Unexpected funding status");
+        assert.equal(await projectContract.currentBalance(), 0, "Unexpected balance after pay out");
     });
 });
