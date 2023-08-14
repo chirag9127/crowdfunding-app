@@ -22,10 +22,13 @@ contract("Project", function (accounts) {
 
     it("test contribute and payOut", async function () {
         projectContract = await Project.deployed();
-        await projectContract.contribute({sender:accounts[0], value:10});
+        receipt = await projectContract.contribute({sender:accounts[0], value:10});
+        assert.equal(receipt.logs[0].event, "FundingReceived");
         assert.equal(await projectContract.state(), Project.State.Fundraising, "Unexpected funding status");
-        await projectContract.contribute({sender:accounts[0], value:190});
+        receipt = await projectContract.contribute({sender:accounts[0], value:190});
         assert.equal(await projectContract.state(), Project.State.Successful, "Unexpected funding status");
+        assert.equal(receipt.logs[0].event, "FundingReceived");
+        assert.equal(receipt.logs[1].event, "CreatorPaid");
         assert.equal(await projectContract.currentBalance(), 0, "Unexpected balance after pay out");
     });
 });
