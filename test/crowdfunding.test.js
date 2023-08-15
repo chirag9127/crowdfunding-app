@@ -1,6 +1,30 @@
 const Crowdfunding = artifacts.require("Crowdfunding");
 const Project = artifacts.require("Project");
 
+// Helper function to increase time on the blockchain
+const increaseTime = async (duration) => {
+  const id = Date.now();
+
+  return new Promise((resolve, reject) => {
+    web3.currentProvider.send({
+      jsonrpc: '2.0',
+      method: 'evm_increaseTime',
+      params: [duration],
+      id: id,
+    }, err1 => {
+      if (err1) return reject(err1);
+
+      web3.currentProvider.send({
+        jsonrpc: '2.0',
+        method: 'evm_mine',
+        id: id + 1,
+      }, (err2, res) => {
+        return err2 ? reject(err2) : resolve(res);
+      });
+    });
+  });
+};
+
 contract("Crowdfunding", (accounts) => {
   let crowdfunding;
 
@@ -107,5 +131,34 @@ contract("Crowdfunding", (accounts) => {
       contributionAmount,
       "Balance did not update correctly after contribution"
     );
+  });
+
+  it("should not allow contributions past the expiry date", async () => {
+    const title = "Test Project";
+    const description = "This is a test project";
+    const durationInDays = 1;  // Only 1 day to make the test run faster
+    const amountToRaise = web3.utils.toWei("1", "ether");
+
+    await crowdfunding.startProject(
+      title,
+      description,
+      durationInDays,
+      amountToRaise
+    );
+
+    const projects = await crowdfunding.returnAllProjects();
+
+    // Fast-forward time by more than the project duration
+    await increaseTime(86400 * (durationInDays + 1));  // 86400 is the number of seconds in a day
+
+    try {
+      await crowdfunding.contribute(projects[0], {
+        from: accounts[1],
+        value: web3.utils.toWei("0.1", "ether"),
+      });
+      assert.fail('Should have reverted but did not.');
+    } catch (error) {
+      assert(error.toString().includes('revert'), 'Expected revert, got another error: ' + error);
+    }
   });
 });
