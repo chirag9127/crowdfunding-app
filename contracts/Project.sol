@@ -59,6 +59,7 @@ contract Project {
       */
     function contribute() external inState(State.Fundraising) payable {
         require(msg.sender != creator);
+        require(now <= raiseBy, "Project deadline passed");
         contributions[msg.sender] = contributions[msg.sender].add(msg.value);
         currentBalance = currentBalance.add(msg.value);
         emit FundingReceived(msg.sender, msg.value, currentBalance);
@@ -132,6 +133,10 @@ contract Project {
         currentState = state;
         currentAmount = currentBalance;
         goalAmount = amountGoal;
+    }
+
+    function checkState() public {
+        checkIfFundingCompleteOrExpired();
     }
 }
 

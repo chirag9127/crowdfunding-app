@@ -65,7 +65,8 @@ contract Crowdfunding {
       * @return null.
       */
     function contribute(address projectAddress) public payable {
-        require(existingProjects[projectAddress] == true);
-        Project(projectAddress).contribute();
+      require(existingProjects[projectAddress] == true);
+      Project(projectAddress).checkState();
+      Project(projectAddress).contribute.value(msg.value)();
     }
 }
